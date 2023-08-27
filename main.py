@@ -11,11 +11,9 @@ from my_contacts.routes import contacts, auth, users
 
 app = FastAPI()
 
-
 app.include_router(auth.router, prefix="/api")
 app.include_router(contacts.router, prefix="/api")
 app.include_router(users.router, prefix="/api")
-
 
 app.add_middleware(
     CORSMiddleware,
@@ -28,21 +26,37 @@ app.add_middleware(
 
 @app.on_event("startup")
 async def startup():
+    """
+        The startup function is called when the application starts up.
+        It's a good place to initialize things that are needed by your app, such as caches or databases.
+
+        :return: A fastapilimiter instance
+    """
     redis_cache = await redis.Redis(host="localhost", port=6379, db=0, encoding="utf-8", decode_responses=True)
     await FastAPILimiter.init(redis_cache)
 
 
 @app.get("/api/healthchecker")
 def healthchecker(db: Session = Depends(get_db)):
+    """
+        The healthchecker function is a simple function that checks the health of the database.
+        It does this by making a request to the database and checking if it returns any results.
+        If there are no results, then we know something is wrong with our connection to the database.
+
+        :param db: Session: Pass the database session to the function
+        :return: A dictionary with a message
+    """
     try:
         # Make request
         result = db.execute(text("SELECT 1")).fetchone()
         if result is None:
-            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Database is not configured correctly")
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                                detail="Database is not configured correctly")
         return {"message": "Welcome to FastAPI!"}
     except Exception as e:
         print(e)
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error connecting to the database")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                            detail="Error connecting to the database")
 
 
 if __name__ == '__main__':

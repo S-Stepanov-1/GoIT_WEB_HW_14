@@ -33,7 +33,14 @@ templates = Jinja2Templates(directory="templates")
 async def update_avatar_user(file: UploadFile = File(),
                              current_user: User = Depends(auth_service.get_current_user),
                              db: Session = Depends(get_db)):
-    """Update user avatar"""
+    """
+        The update_avatar_user function updates the avatar of a user.
+
+        :param file: UploadFile: Upload the file to cloudinary
+        :param current_user: User: Get the current user object
+        :param db: Session: Get the database session
+        :return: A userresponse object
+    """
     uploaded_file_info = cloudinary.uploader \
         .upload(file.file, public_id=f"My Contacts App/{current_user.username}", overwrite=True)
 
@@ -52,6 +59,17 @@ async def update_avatar_user(file: UploadFile = File(),
 @router.post("/forgot_password")
 async def forgot_password(request: Request, background_tasks: BackgroundTasks, user_email: str,
                           db: Session = Depends(get_db)):
+    """
+        The forgot_password function is used to send a reset password email to the user.
+            The function takes in the user's email address and sends an email with a link that allows them to reset their
+            password. If no user exists with that email, then an error message is returned.
+
+        :param request: Request: Get the base_url of the website
+        :param background_tasks: BackgroundTasks: Run the send_email
+        :param user_email: str: Get the user email from the request body
+        :param db: Session: Get a database session
+        :return: A dictionary with the user_email and a detail message
+    """
     user = await repository_users.get_user_by_email(user_email, db)
     if user is None:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -64,6 +82,17 @@ async def forgot_password(request: Request, background_tasks: BackgroundTasks, u
 
 @router.get("/reset_password/{token}")
 async def reset_password(token: str, request: Request, db: Session = Depends(get_db)):
+    """
+        The reset_password function is used to reset a user's password.
+            It takes in the token that was sent to the user's email address, and uses it to get their email address.
+            Then, it gets the user from the database using their email address.
+            Finally, it returns an HTML template with information about that specific user.
+
+        :param token: str: Get the email from the token
+        :param request: Request: Get the request object
+        :param db: Session: Get the database session
+        :return: A template response that renders the reset_password
+    """
     try:
         email = await auth_service.get_email_from_token(token)
         user = await repository_users.get_user_by_email(email, db)
@@ -80,6 +109,21 @@ async def reset_password_post(token: str,
                               new_password: str = Form(...),
                               db: Session = Depends(get_db)):
 
+    """
+        The reset_password_post function is used to reset a user's password.
+            It takes in the token, request, background_tasks, new_password and db as parameters.
+            The token parameter is used to get the email of the user who wants to change their password.
+            The request parameter is used for sending emails with sendgrid.
+            The background_tasks parameter allows us to run tasks in the background using celery (in this case we use it for sending emails).
+            The new_password paramter contains a form that requires input from users when they want to change their passwords (it cannot be empty
+
+        :param token: str: Get the token from the url
+        :param request: Request: Get the base_url
+        :param background_tasks: BackgroundTasks: Add a task to the background tasks queue
+        :param new_password: str: Get the new password from the user
+        :param db: Session: Get the database session
+        :return: A userresponse object
+    """
     email = await auth_service.get_email_from_token(token)
     user = await repository_users.get_user_by_email(email, db)
     new_password = await auth_service.get_password_hash(new_password)
