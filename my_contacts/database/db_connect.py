@@ -24,7 +24,6 @@ def get_db():
         It also ensures that the connection to the database is closed after each request.
 
         :return: A database session
-        :doc-author: Trelent
     """
     db = SessionLocal()
     try:
